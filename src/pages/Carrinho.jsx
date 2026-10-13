@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import SugestaoItem from '../components/SugestaoItem'
-import { agruparItens, calcularTotal } from '../utils/carrinho'
+import { agruparItens, calcularTotal, produtoDisponivel } from '../utils/carrinho'
 import { validarCupom } from '../utils/cupons'
 import { formatarPreco } from '../utils/formatarPreco'
 
@@ -13,9 +13,12 @@ export default function Carrinho({ carrinho, produtos, clienteAtual, onAdicionar
   const itens = agruparItens(carrinho)
   const total = calcularTotal(carrinho)
   const totalComDesconto = cupomAplicado ? total * (1 - cupomAplicado.desconto) : total
+  const valorParaFreteGratis = 200
+  const faltaParaFreteGratis = Math.max(0, valorParaFreteGratis - totalComDesconto)
+  const ganhouFreteGratis = totalComDesconto >= valorParaFreteGratis
 
   const sugestoes = produtos
-    .filter((produto) => !carrinho.find((item) => item.id === produto.id))
+    .filter((produto) => produtoDisponivel(produto) && !carrinho.find((item) => item.id === produto.id))
     .slice(0, 3)
 
   function aplicarCupom(evento) {
@@ -58,7 +61,7 @@ export default function Carrinho({ carrinho, produtos, clienteAtual, onAdicionar
               </div>
               <div className="item-info">
                 <p className="item-titulo">{item.produto.title}</p>
-                <p className="item-preco">R$ {item.produto.price}</p>
+                <p className="item-preco">{formatarPreco(item.produto.price)}</p>
               </div>
               <span className="item-quantidade">{item.quantidade} un.</span>
               <button className="botao-texto" onClick={() => onRemover(item.produto.id)}>
@@ -93,6 +96,19 @@ export default function Carrinho({ carrinho, produtos, clienteAtual, onAdicionar
               <span>{cupomAplicado.desconto * 100}%</span>
             </p>
           )}
+
+          {ganhouFreteGratis ? (
+            <p className="resumo-linha frete-gratis">
+              <span>Frete</span>
+              <span>Grátis</span>
+            </p>
+          ) : (
+            <p className="resumo-linha">
+              <span>Falta para frete grátis</span>
+              <span>{formatarPreco(faltaParaFreteGratis)}</span>
+            </p>
+          )}
+
           <p className="total">
             <span>Total</span>
             <span>{formatarPreco(totalComDesconto)}</span>

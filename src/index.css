@@ -132,6 +132,36 @@ h2 {
   margin: 0;
 }
 
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 360px;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(21, 23, 28, 0.95);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.toast button {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.toast button:hover {
+  opacity: 1;
+}
+
 /* Cabeçalho */
 
 .header {
@@ -395,7 +425,7 @@ h2 {
   font-size: 0.85rem;
 }
 
-.preco-original + .preco {
+.preco-original+.preco {
   color: var(--cor-destaque);
 }
 
@@ -622,7 +652,7 @@ h2 {
   padding: var(--espaco-4);
 }
 
-.item-carrinho + .item-carrinho {
+.item-carrinho+.item-carrinho {
   border-top: 1px solid var(--cor-borda);
 }
 

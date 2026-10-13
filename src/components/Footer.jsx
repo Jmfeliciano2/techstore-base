@@ -17,10 +17,6 @@ export default function Footer({ clientes, clienteAtualId, onTrocarCliente }) {
           <p>atendimento@techstore.com.br</p>
         </div>
 
-        <div className="footer-coluna">
-          <p className="footer-titulo">Área interna</p>
-          <Link to="/estoque">Estoque</Link>
-        </div>
       </div>
 
       <div className="footer-base">

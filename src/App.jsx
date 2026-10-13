@@ -6,7 +6,6 @@ import RolarParaTopo from './components/RolarParaTopo'
 import Loja from './pages/Loja'
 import PaginaProduto from './pages/PaginaProduto'
 import Carrinho from './pages/Carrinho'
-import Estoque from './pages/Estoque'
 import { buscarProdutos } from './services/produtos'
 import { buscarClientes } from './services/clientes'
 
@@ -17,6 +16,7 @@ export default function App() {
   const [carrinho, setCarrinho] = useState([])
   const [clientes, setClientes] = useState([])
   const [clienteAtualId, setClienteAtualId] = useState(null)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
     buscarProdutos()
@@ -30,8 +30,35 @@ export default function App() {
     })
   }, [])
 
+  useEffect(() => {
+    setCarrinho([])
+  }, [clienteAtualId])
+
+  useEffect(() => {
+    if (!toast) return
+
+    const temporizador = setTimeout(() => {
+      setToast(null)
+    }, 3000)
+
+    return () => clearTimeout(temporizador)
+  }, [toast])
+
+  const produtosDisponiveis = produtos.filter(
+    (produto) => Number(produto.price) > 0 && produto.estoque > 0
+  )
+
   function adicionarAoCarrinho(produto) {
-    setCarrinho(carrinho.concat(produto))
+    if (!produto || !Number.isFinite(Number(produto.price)) || Number(produto.price) <= 0) {
+      return
+    }
+
+    if (produto.estoque === 0) {
+      return
+    }
+
+    setCarrinho((atual) => atual.concat(produto))
+    setToast(`${produto.title} adicionado ao carrinho!`)
   }
 
   function removerUmaUnidade(produtoId) {
@@ -53,6 +80,16 @@ export default function App() {
   return (
     <div className="app">
       <RolarParaTopo />
+
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          <span>{toast}</span>
+          <button type="button" onClick={() => setToast(null)} aria-label="Fechar mensagem">
+            ×
+          </button>
+        </div>
+      )}
+
       <Header carrinho={carrinho} clienteAtual={clienteAtual} />
 
       <main className="conteudo">
@@ -63,7 +100,7 @@ export default function App() {
           <Routes>
             <Route
               path="/"
-              element={<Loja produtos={produtos} onAdicionar={adicionarAoCarrinho} />}
+              element={<Loja produtos={produtosDisponiveis} onAdicionar={adicionarAoCarrinho} />}
             />
             <Route
               path="/produto/:id"
@@ -81,7 +118,6 @@ export default function App() {
                 />
               }
             />
-            <Route path="/estoque" element={<Estoque produtos={produtos} />} />
           </Routes>
         )}
       </main>

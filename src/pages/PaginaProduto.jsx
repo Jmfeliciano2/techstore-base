@@ -1,10 +1,17 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import ProdutoCard from '../components/ProdutoCard'
+import { produtoDisponivel } from '../utils/carrinho'
+import { formatarPreco } from '../utils/formatarPreco'
 
 export default function PaginaProduto({ produtos, onAdicionar }) {
   const { id } = useParams()
-  const produto = produtos.find((item) => item.id === id)
+  const [dadosAviso, setDadosAviso] = useState({ nome: '', email: '' })
+  const [mensagemAviso, setMensagemAviso] = useState('')
 
-  if (!produto) {
+  const produto = produtos.find((item) => String(item.id) === String(id))
+
+  if (!produto || !Number.isFinite(Number(produto.price)) || Number(produto.price) <= 0) {
     return (
       <div className="estado-vazio">
         <p>Produto não encontrado.</p>
@@ -15,9 +22,42 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
     )
   }
 
+  const esgotado = produto.estoque === 0
   const relacionados = produtos
-    .filter((item) => item.category === produto.category && item.id !== produto.id)
+    .filter((item) => item.category === produto.category && item.id !== produto.id && produtoDisponivel(item))
     .slice(0, 4)
+
+  function cadastrarAviso(evento) {
+    evento.preventDefault()
+
+    if (!dadosAviso.nome.trim() || !dadosAviso.email.trim()) {
+      setMensagemAviso('Informe seu nome e e-mail para receber o aviso.')
+      return
+    }
+
+    const lista = JSON.parse(localStorage.getItem('techstore-alertas') || '[]')
+    const email = dadosAviso.email.trim().toLowerCase()
+    const jaRegistrado = lista.some(
+      (item) => item.produtoId === produto.id && item.email.toLowerCase() === email
+    )
+
+    if (jaRegistrado) {
+      setMensagemAviso('Você já está na lista de espera deste produto.')
+      return
+    }
+
+    lista.push({
+      produtoId: produto.id,
+      produtoNome: produto.title,
+      nome: dadosAviso.nome.trim(),
+      email,
+      data: new Date().toISOString(),
+    })
+
+    localStorage.setItem('techstore-alertas', JSON.stringify(lista))
+    setMensagemAviso('Cadastro realizado com sucesso. Você receberá um aviso quando o produto voltar.')
+    setDadosAviso({ nome: '', email: '' })
+  }
 
   return (
     <section>
@@ -37,17 +77,45 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
           <p className="card-avaliacao">
             ★ {produto.rating.rate} <span>({produto.rating.count} avaliações)</span>
           </p>
-          <p className="detalhe-preco">R$ {produto.price.toFixed(2).replace('.', ',')}</p>
+          <p className="detalhe-preco">{formatarPreco(produto.price)}</p>
           <p className="detalhe-descricao">{produto.description}</p>
-          <p className="detalhe-estoque">{produto.estoque} unidades disponíveis</p>
+          <p className="detalhe-estoque">
+            {esgotado ? 'Produto esgotado' : `${produto.estoque} unidades disponíveis`}
+          </p>
 
           <button
             className="botao botao-grande"
             onClick={() => onAdicionar(produto)}
-            disabled={produto.estoque === 0}
+            disabled={esgotado}
           >
-            Adicionar ao carrinho
+            {esgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
           </button>
+
+          {esgotado && (
+            <form onSubmit={cadastrarAviso} className="aviso-form">
+              <label htmlFor="nome-aviso">Nome</label>
+              <input
+                id="nome-aviso"
+                value={dadosAviso.nome}
+                onChange={(evento) => setDadosAviso((atual) => ({ ...atual, nome: evento.target.value }))}
+                placeholder="Seu nome"
+              />
+
+              <label htmlFor="email-aviso">E-mail</label>
+              <input
+                id="email-aviso"
+                type="email"
+                value={dadosAviso.email}
+                onChange={(evento) => setDadosAviso((atual) => ({ ...atual, email: evento.target.value }))}
+                placeholder="seu@email.com"
+              />
+
+              <button type="submit" className="botao botao-secundario">
+                Avise-me quando voltar
+              </button>
+              {mensagemAviso && <p className="mensagem-cupom">{mensagemAviso}</p>}
+            </form>
+          )}
 
           <ul className="detalhe-garantias">
             <li>Troca grátis em até 30 dias</li>
@@ -59,18 +127,7 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
       <h2>Produtos relacionados</h2>
       <div className="grade">
         {relacionados.map((item) => (
-          <article key={item.id} className="card">
-            <Link to={`/produto/${item.id}`} className="card-link">
-              <div className="card-imagem-moldura">
-                <img src={item.image} alt={item.title} className="card-imagem" />
-              </div>
-              <h3 className="card-titulo">{item.title}</h3>
-            </Link>
-            <p className="preco">R$ {Number(item.price).toFixed(2).replace('.', ',')}</p>
-            <button className="botao" onClick={() => onAdicionar(item)}>
-              Adicionar ao carrinho
-            </button>
-          </article>
+          <ProdutoCard key={item.id} produto={item} onAdicionar={onAdicionar} />
         ))}
       </div>
     </section>
